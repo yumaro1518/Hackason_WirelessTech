@@ -1,214 +1,151 @@
+/* --------------  必要なヘッダ  -------------- */
 #include <Arduino.h>
+#include <string.h>        // strcmp, strlen, memmove
 
-const uint8_t  LED_PIN = 13;         // 送信用 LED
-const uint16_t UNIT    = 60;        // 1 ドット長 [ms]  ← 好みに応じて変更(50 ~ 120)
-const uint8_t  PHOTO_PIN    = A0;   // 光センサ
-const uint16_t DOT_TOL      = 25;   // dot / dash 判定許容 [ms]
-const uint16_t FRAME_TOUT   = 2000; // 無信号タイムアウト [ms]
+/* --------------  共有定数  ------------------- */
+const uint8_t  LED_PIN   = 7;     // TX 用 LED
+const uint8_t  PHOTO_PIN = A0;     // RX 用フォトセンサ
+const uint16_t UNIT      = 60;     // 1 ドット長 [ms]
+const uint16_t DOT_TOL   = 25;     // ドット／ダッシュ判定許容
+const uint16_t FRAME_TO  = 2000;   // 無信号タイムアウト [ms]
 
-/* --- ヘッダー／フッター（ITU プロシグナル） --- */
-const char* HEADER = "-.-.-";  // CT (= KA) ×2 : 「送信開始」
-const char* FOOTER = ".-.-.";  // AR ×2        : 「送信終了」
-uint16_t threshold = 512;
+const char* HEADER  = "-.-.-";     // CT (KA)
+const char* FOOTER  = ".-.-.";     // AR
+const char* NUM_PAT[8] = { "-", ".-", "..-", "...-", "....-",
+                           ".....", "-....", "-..." };
 
+uint16_t  threshold = 512;         // RX しきい値（動的に更新）
+bool      txBusy    = false;       // 送信中フラグ
 
-/* --- 0〜7 の略体パターン表 --- */
-const char* NUM_PATTERNS[8] = {
-  "-",       // 0  (T)
-  ".-",      // 1  (A)
-  "..-",     // 2  (U)
-  "...-",    // 3  (V)
-  "....-",   // 4
-  ".....",   // 5
-  "-....",   // 6
-  "-..."     // 7  (B)
-};
+/* --------------  TX ユーティリティ  ---------- */
+inline void dot ()  { digitalWrite(LED_PIN,HIGH); delay(UNIT);
+                      digitalWrite(LED_PIN,LOW ); delay(UNIT); }
+inline void dash()  { digitalWrite(LED_PIN,HIGH); delay(3*UNIT);
+                      digitalWrite(LED_PIN,LOW ); delay(UNIT); }
 
-/* ========================================================= */
-inline void dot () {                       // HIGH 1T
-  digitalWrite(LED_PIN, HIGH); delay(UNIT);
-  digitalWrite(LED_PIN, LOW ); delay(UNIT); // パーツ間 LOW 1T
-}
-inline void dash() {                       // HIGH 3T
-  digitalWrite(LED_PIN, HIGH); delay(3*UNIT);
-  digitalWrite(LED_PIN, LOW ); delay(UNIT);
-}
-/* ========================================================= */
 void sendPattern(const char* pat)
 {
   for (const char* p = pat; *p; ++p) {
-    if (*p == '.') dot ();
-    else if (*p == '-') dash();
-    else if (*p == ' ') {                  // 文字間 LOW 3T
-      digitalWrite(LED_PIN, LOW);
-      delay(2*UNIT);                       // 3T-1T (直前のパーツ間 1T を含め 3T)
-    }
+    if (*p=='.') dot();
+    else if (*p=='-') dash();
+    else if (*p==' ') { digitalWrite(LED_PIN,LOW); delay(2*UNIT); }
   }
 }
 
-/* ---------------------------------------------------------
- *  サンプリングして HIGH/LOW 判定
- * --------------------------------------------------------- */
-inline bool isHigh()
+void transmit(uint8_t val)
 {
-  return analogRead(PHOTO_PIN) > threshold;
+  txBusy = true;                          // ==== TX 開始 ====
+  sendPattern(HEADER);
+  sendPattern(NUM_PAT[val]);
+  sendPattern(FOOTER);
+  txBusy = false;                         // ==== TX 終了 ====
+  delay(7*UNIT);                          // フレーム間サイレンス
 }
 
-/* ---------------------------------------------------------
- *  パルス / スペース長(ms) を計測
- *    wantHigh = true  : HIGH 区間長
- *    wantHigh = false : LOW  区間長
- * --------------------------------------------------------- */
+/* --------------  RX ユーティリティ  ---------- */
+inline bool isHigh() { return analogRead(PHOTO_PIN) > threshold; }
+
 uint16_t measure(bool wantHigh)
 {
   uint32_t t0 = millis();
-  /* 対象状態になるまで待機 */
-  while (isHigh() != wantHigh) {
-    if (millis() - t0 > FRAME_TOUT) return 0;
-  }
-  /* 長さを測定 */
-  uint32_t start = millis();
-  while (isHigh() == wantHigh) {
-    if (millis() - start > 5000) break;          // 異常に長い
-  }
-  return (uint16_t)(millis() - start);
+  while (isHigh()!=wantHigh) if (millis()-t0 > FRAME_TO) return 0;
+
+  uint32_t s = millis();
+  while (isHigh()==wantHigh) if (millis()-s > 5000) break;
+  return (uint16_t)(millis()-s);
 }
 
-/* ---------------------------------------------------------
- *  dot / dash 判定
- * --------------------------------------------------------- */
 char classify(uint16_t len)
 {
-  if (abs((int)len - (int)UNIT)       <= DOT_TOL)        return '.';
-  if (abs((int)len - (int)(3*UNIT))   <= 3*DOT_TOL)      return '-';
-  return '?';   // 判定不能
+  if (abs((int)len-(int)UNIT)       <= DOT_TOL)     return '.';
+  if (abs((int)len-(int)(3*UNIT))   <= 3*DOT_TOL)   return '-';
+  return '?';
 }
 
-/* ---------------------------------------------------------
- *  スライディングバッファへ追加
- * --------------------------------------------------------- */
-void pushChar(char *buf, uint8_t &len, char c, uint8_t maxLen = 32)
+void pushChar(char* buf,uint8_t& len,char c,uint8_t max=32)
 {
-  if (len < maxLen) buf[len++] = c;
-  else {
-    memmove(buf, buf + 1, maxLen - 1);
-    buf[maxLen - 1] = c;
-  }
+  if (len<max) buf[len++]=c;
+  else { memmove(buf,buf+1,max-1); buf[max-1]=c; }
 }
 
-/* ---------------------------------------------------------
- *  キャリブレーション：環境光平均 → threshold 設定
- * --------------------------------------------------------- */
-void calibrate(uint16_t ms = 400)
+void calibrate(uint16_t ms=400)            // 周囲光しきい値を更新
 {
-  uint32_t sum = 0; uint16_t cnt = 0; uint32_t t0 = millis();
-  while (millis() - t0 < ms) { sum += analogRead(PHOTO_PIN); ++cnt; }
-  threshold = (sum / cnt) + 30; // “暗”平均 + マージン
+  uint32_t sum=0; uint16_t cnt=0; uint32_t t0=millis();
+  while (millis()-t0<ms) { sum+=analogRead(PHOTO_PIN); ++cnt; }
+  threshold = (sum/cnt)+30;
 }
 
-/* ---------------------------------------------------------
- *  HEADER 検出ループ
- *  成功時：buf クリアして true
- * --------------------------------------------------------- */
+/* ---- HEADER 待ち → 見つかったら true --------------- */
 bool waitHeader()
 {
-  char   buf[16]; uint8_t len = 0;
-  uint32_t idleT0 = millis();
+  calibrate();                              // 毎フレーム再キャリブ
+  char buf[16]={0}; uint8_t len=0;
 
-  while (true) {
-    uint16_t h = measure(true);   if (!h) return false;
-    uint16_t l = measure(false);  if (!l) return false;
+  while (!txBusy) {                         // 自送信中は受信禁止
+    uint16_t h=measure(true);  if(!h)return false;
+    uint16_t l=measure(false); if(!l)return false;
 
-    char sym = classify(h);
-    if (sym == '?')        { len = 0; continue; }    // 誤判定 → バッファ捨て
-    pushChar(buf, len, sym);
+    char s=classify(h);
+    if(s=='?'){ len=0; continue; }
+    pushChar(buf,len,s);
 
-    if (len >= strlen(HEADER) &&
-        !strncmp(buf + len - strlen(HEADER), HEADER, strlen(HEADER)))
-    {
-      return true;         // 同期完了
-    }
-
-    if (millis() - idleT0 > FRAME_TOUT) return false; // 長時間何も合わない
+    if(len>=strlen(HEADER) &&
+       !strncmp(buf+len-strlen(HEADER),HEADER,strlen(HEADER)))
+      return true;
   }
+  return false;
 }
 
-/* ---------------------------------------------------------
- *  フッター検出＋データ抽出
- *  返り値： 0–7 = 受信値 / 0xFF = エラー
- * --------------------------------------------------------- */
+/* ---- データ＋フッター受信 → 0-7 / 0xFF --------------- */
 uint8_t receivePacket()
 {
-  char seq[32]; uint8_t len = 0;
+  char seq[32]={0}; uint8_t len=0;
+  while (!txBusy) {
+    uint16_t h=measure(true);  if(!h)return 0xFF;
+    uint16_t l=measure(false); if(!l)return 0xFF;
 
-  while (true) {
-    uint16_t h = measure(true);   if (!h) return 0xFF;
-    uint16_t l = measure(false);  if (!l) return 0xFF;
+    char s=classify(h); if(s=='?')return 0xFF;
+    pushChar(seq,len,s);
 
-    char sym = classify(h);
-    if (sym == '?') return 0xFF;      // ノイズ
-    pushChar(seq, len, sym);
-
-    /* フッター検出 */
-    if (len >= strlen(FOOTER) &&
-        !strncmp(seq + len - strlen(FOOTER), FOOTER, strlen(FOOTER)))
+    if(len>=strlen(FOOTER) &&
+       !strncmp(seq+len-strlen(FOOTER),FOOTER,strlen(FOOTER)))
     {
-      len -= strlen(FOOTER);          // ← データ長（ヘッダー除去済）
-      seq[len] = '\0';
-
-      /* ヘッダー直後に入ったデータ（1〜5符号以内）と一致? */
-      for (uint8_t n = 0; n < 8; ++n) {
-        if (!strcmp(seq, NUM_PATTERNS[n])) return n;
-      }
-      return 0xFF;                    // 照合失敗
+      len-=strlen(FOOTER); seq[len]='\0';
+      for(uint8_t n=0;n<8;++n) if(!strcmp(seq,NUM_PAT[n])) return n;
+      return 0xFF;
     }
-
-    /* フレーム全体が異常に長い場合タイムアウト */
-    if (len >= 25) return 0xFF;
+    if(len>=25) return 0xFF;
   }
+  return 0xFF;
 }
 
-/* ========================================================= */
+/* --------------  SETUP & LOOP  ---------------- */
 void setup()
 {
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
-
+  pinMode(LED_PIN,OUTPUT);  digitalWrite(LED_PIN,LOW);
+  pinMode(PHOTO_PIN,INPUT);
   Serial.begin(9600);
-  Serial.println(F("Enter 0–7 and press <return> to transmit."));
-
-  pinMode(PHOTO_PIN, INPUT);
-  calibrate();
-  Serial.print(F("Threshold = ")); Serial.println(threshold);
-  Serial.println(F("Waiting for frames..."));
+  Serial.println(F("Enter 0–7 + <Enter> to TX, or just watch to RX."));
 }
 
-/* ========================================================= */
 void loop()
 {
+  /* ---------- 送信リクエスト ---------- */
   if (Serial.available()) {
-    int ch = Serial.read();
-    if ('0' <= ch && ch <= '7') {
-      uint8_t n = ch - '0';
-      Serial.print(F("TX: ")); Serial.println(n);
-
-      sendPattern(HEADER);                   // ヘッダー
-      sendPattern(NUM_PATTERNS[n]);          // 本データ
-      sendPattern(FOOTER);                   // フッター
-      delay(7*UNIT);                         // フレーム間サイレンス
+    int ch = Serial.read();           // 1 byte だけ読む
+    if ('0'<=ch && ch<='7') {
+      Serial.print(F("TX: ")); Serial.println((char)ch);
+      transmit(ch-'0');
     }
   }
-    /* 1) ヘッダー待ち */
-  if (!waitHeader())      { Serial.println(F("Header timeout")); return; }
 
-  /* 2) データ＋フッター受信 */
-  uint8_t val = receivePacket();
-  if (val == 0xFF)        { Serial.println(F("Decode error"));   return; }
+  /* ---------- 受信側 ---------- */
+  if (txBusy) return;                 // 自送信中はスキップ
 
-  Serial.print(F("Received value = "));
-  Serial.println(val);
+  if (!waitHeader()) return;          // ヘッダー検出
 
-  /* 3) フレーム間サイレンスを待って再開 */
-  uint32_t t0 = millis();
-  while (millis() - t0 < 7 * UNIT) { if (isHigh()) t0 = millis(); }
+  uint8_t v = receivePacket();        // 本文
+  if (v==0xFF) { Serial.println(F("RX error")); return; }
+
+  Serial.print(F("Received: ")); Serial.println(v);
 }
