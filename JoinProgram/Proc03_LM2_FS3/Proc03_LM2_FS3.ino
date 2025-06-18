@@ -5,6 +5,9 @@
 // ヘッダーとフッターを受信したら、その時点でHeader detectedやFooter detectedを出力
 // 認識した数値をint getNum[]配列に格納し、フッター受信後にその中身を表示
 // さらに、受信したgetNum[]配列の内容を元に、RGB LEDで色を出力します。
+// 仕様変更: ヘッダー受信時のLED出力は行わず、フッター受信後にヘッダー色を出力します。
+
+#include <Arduino.h>
 
 // --- グローバル設定 ---
 // モールス符号の基本単位時間 (ミリ秒)
@@ -227,18 +230,21 @@ void addSpaceToBuffer() {
   }
 }
 
-// バッファの内容を即座に処理する（変更あり：フッターで色出力）
+// バッファの内容を即座に処理する
 void processBufferImmediately() {
   if (strcmp(morseBuffer, HEADER_STR) == 0) {
     Serial.println("\n--- HEADER RECEIVED ---");
     resetGetNumBuffer(); // ヘッダーを受信したらgetNum配列をリセット
-    sendColor(COLOR_BLUE); // ヘッダーの単色出力 (青)
-    Serial.println("Outputting Header Color (BLUE).");
+    // ここではヘッダーの単色出力は行わない
   } else if (strcmp(morseBuffer, FOOTER_STR) == 0) {
     Serial.println("\n--- FOOTER RECEIVED ---");
-    displayGetNumBuffer(); // フッターを受信したらgetNum配列の中身を表示
-    // ここでgetNum配列の内容を元にRGB LEDを光らせる
-    outputColorsFromGetNum();
+    // フッター受信後、ヘッダー色を出力
+    sendColor(COLOR_BLUE); // ヘッダーの単色出力 (青)
+    Serial.println("Outputting Header Color (BLUE) on Footer reception.");
+    
+    displayGetNumBuffer(); // getNum配列の中身を表示
+    outputColorsFromGetNum(); // getNum配列の内容を元にRGB LEDを光らせる
+    
     sendColor(COLOR_GREEN); // フッターの単色出力 (緑)
     Serial.println("Outputting Footer Color (GREEN).");
     resetGetNumBuffer(); // 表示後、getNum配列をリセット
@@ -313,10 +319,6 @@ void sendColor(int code) {
 // 受信したgetNum配列の内容を元にRGB LEDを光らせる関数
 void outputColorsFromGetNum() {
   Serial.println("\n--- Outputting Colors based on Received Data ---");
-  // ヘッダーの色出力 (モールス符号のヘッダー受信時にも出力されるので、ここではスキップも可)
-  // sendColor(COLOR_BLUE); // 既にprocessBufferImmediatelyで出力されているため、コメントアウト
-  // Serial.println("Outputting Header Color (BLUE).");
-
 
   // 受信したデータ配列を元に色を出力
   for (int i = 0; i < getNumIndex; i++) {
@@ -343,10 +345,6 @@ void outputColorsFromGetNum() {
       sendColor(COLOR_LOWCYAN);
     }
   }
-
-  // フッターの色出力 (モールス符号のフッター受信時にも出力されるので、ここではスキップも可)
-  // sendColor(COLOR_GREEN); // 既にprocessBufferImmediatelyで出力されているため、コメントアウト
-  // Serial.println("Outputting Footer Color (GREEN).");
 
   Serial.println("--- Color Output Complete ---");
 }
