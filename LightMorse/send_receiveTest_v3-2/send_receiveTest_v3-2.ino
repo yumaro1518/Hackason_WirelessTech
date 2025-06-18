@@ -16,7 +16,7 @@
 #include <Arduino.h>
 
 /*──────────────────── 送受共通パラメータ ───────────────────*/
-const uint16_t UNIT   = 150;               // モールス基本時間 [ms]（調整可）
+const uint16_t UNIT   = 100;               // モールス基本時間 [ms]（調整可）
 const uint16_t DOT    = UNIT;
 const uint16_t DASH   = 3 * UNIT;
 const uint16_t GAP_SYM= UNIT;
@@ -25,10 +25,10 @@ const uint16_t GAP_MSG= 7 * UNIT;
 
 /*──────────────────── 送信設定 ───────────────────*/
 const uint8_t  LASER_PIN = 9;
-const uint8_t  TX_NUMBER = 3;              // ★ここを 0〜7 に変えるだけ★
+const uint8_t  TX_NUMBER = 01234567;              // ★ここを 0〜7 に変えるだけ★
 
 /* モールス符号配列（正: 1=DOT,3=DASH / 負: -1=内部, -2=文字間）*/
-const int Hdr[] = {1,1,1,-1,3,3,3,-1,1,1,1};                 // ...---...
+const int Hdr[] = {1,1,-1,3,3,3,-1,1,1};                     // ..---..
 const int Ftr[] = {1,-1,3,-1,1,-1,3,-1,1};                   // .-.-.
 const int N0[]  = {3,3,3,3,3};                               // -----
 const int N1[]  = {1,3,3,3,3};                               // .----
@@ -45,7 +45,7 @@ const uint8_t NUM_LEN[8]= {
 
 /*──────────────────── 受信設定 ───────────────────*/
 const uint8_t  SENSOR_PIN   = A0;
-const uint16_t THRESH       = 300;         // 暗:0-3 / 明:200-1023 ⇒ 中間より少し下
+const uint16_t THRESH       = 500;         // 暗:0-3 / 明:200-1023 ⇒ 中間より少し下
 const uint16_t DASH_T       = 2 * UNIT;    // これ未満=dot, 以上=dash
 const uint16_t GAPCHR_T     = 2 * UNIT;    // 文字区切り
 const uint16_t GAPMSG_T     = 6 * UNIT;    // メッセージ区切り
