@@ -12,7 +12,7 @@ const int UNIT_TIME = 100; // 例: 100ms
 const int LASER_PIN = 9; // レーザーモジュールが接続されているデジタルピン
 
 // 送信する固定の数値シーケンス
-const String DATA_TO_SEND = "01234567"; // ここで送信したい数字の並びを設定します
+const String DATA_TO_SEND = "2447344142"; // ここで送信したい数字の並びを設定します
 
 // モールス符号の定義 (0-7)
 // ドットは1、ダッシュは3
