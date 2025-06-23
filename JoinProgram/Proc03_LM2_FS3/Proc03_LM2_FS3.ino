@@ -12,7 +12,7 @@
 // --- グローバル設定 ---
 // モールス符号の基本単位時間 (ミリ秒)
 // 送信側と受信側で同じ値を設定してください。
-const int UNIT_TIME = 100; // 例: 100ms
+const int UNIT_TIME = 80; // 例: 100ms
 
 // --- 受信側設定 (モールス符号用) ---
 const int PHOTOTRANSISTOR_PIN = A0; // フォトトランジスタが接続されているアナログピン
@@ -21,25 +21,34 @@ const int DEBOUNCE_DELAY = 10;      // 立ち上がり/立ち下がり時のノ�
 const int TIMEOUT_DURATION = 7 * UNIT_TIME; // 語間隔 (長すぎる空白を検出してメッセージ終了と判断するため)
 
 // モールス符号解読用バッファ
-char morseBuffer[80]; // 最大80符号分のドット/ダッシュを格納 (ヘッダー+データ+フッター用)
+char morseBuffer[200]; // 最大80符号分のドット/ダッシュを格納 (ヘッダー+データ+フッター用)
 int bufferIndex = 0;
 
 // 認識した数字を格納する配列とインデックス
 // 最大で送信する数字の数に合わせてサイズを設定します。
 // 例: ヘッダー + 8文字 + フッター の場合、8文字分のスペースが必要。
 // 便宜上、最大20文字分の数字が格納できるとしています。
-int getNum[20];
+int getNum[40];
 int getNumIndex = 0;
 
 // モールス符号の定義 (ドット/ダッシュ文字列)
-const char* MORSE_CODE_0_STR = "-----";
-const char* MORSE_CODE_1_STR = ".----";
-const char* MORSE_CODE_2_STR = "..---";
-const char* MORSE_CODE_3_STR = "...--";
-const char* MORSE_CODE_4_STR = "....-";
-const char* MORSE_CODE_5_STR = ".....";
-const char* MORSE_CODE_6_STR = "-....";
-const char* MORSE_CODE_7_STR = "--...";
+//const char* MORSE_CODE_0_STR = "-----";
+//const char* MORSE_CODE_1_STR = ".----";
+//const char* MORSE_CODE_2_STR = "..---";
+//const char* MORSE_CODE_3_STR = "...--";
+//const char* MORSE_CODE_4_STR = "....-";
+//const char* MORSE_CODE_5_STR = ".....";
+//const char* MORSE_CODE_6_STR = "-....";
+//const char* MORSE_CODE_7_STR = "--...";
+
+const char* MORSE_CODE_0_STR = "---";
+const char* MORSE_CODE_1_STR = "--.";
+const char* MORSE_CODE_2_STR = "-.-";
+const char* MORSE_CODE_3_STR = "-..";
+const char* MORSE_CODE_4_STR = ".--";
+const char* MORSE_CODE_5_STR = ".-.";
+const char* MORSE_CODE_6_STR = "..-";
+const char* MORSE_CODE_7_STR = "...";
 
 // ヘッダーとフッター (文字列)
 // 送信側と文字列が一致している必要があります。
@@ -79,8 +88,8 @@ const int colorPairs[8][2] = {
 };
 
 // 発光時間を調整 (ミリ秒)
-const int LIGHT_ON_DURATION = 1500; // 各色1.5秒点灯
-const int INTERVAL_DURATION = 500;  // 色間の消灯時間
+const int LIGHT_ON_DURATION = 300; // 各色1.5秒点灯
+const int INTERVAL_DURATION = 100;  // 色間の消灯時間
 
 // --- 関数プロトタイプ宣言 ---
 void addToMorseBuffer(char morseChar);
