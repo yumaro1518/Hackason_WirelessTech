@@ -15,14 +15,15 @@ const int LASER_PIN = 9; // レーザーモジュールが接続されている�
 // -1: 文字内符号間隔 (ドットとダッシュの間) -> UNIT_TIME
 // -2: 文字間隔 (文字と文字の間)         -> 3 * UNIT_TIME
 // -3: 語間隔 (単語と単語の間)           -> 7 * UNIT_TIME (今回は使用しない)
-const int MORSE_CODE_0[] = {3, 3, 3, 3, 3}; // -----
-const int MORSE_CODE_1[] = {1, 3, 3, 3, 3}; // .----
-const int MORSE_CODE_2[] = {1, 1, 3, 3, 3}; // ..---
-const int MORSE_CODE_3[] = {1, 1, 1, 3, 3}; // ...--
-const int MORSE_CODE_4[] = {1, 1, 1, 1, 3}; // ....-
-const int MORSE_CODE_5[] = {1, 1, 1, 1, 1}; // .....
-const int MORSE_CODE_6[] = {3, 1, 1, 1, 1}; // -....
-const int MORSE_CODE_7[] = {3, 3, 1, 1, 1}; // --...
+// モールス符号の定義 (0-7)
+const int MORSE_CODE_0[] = {3, 3, 3}; // -----
+const int MORSE_CODE_1[] = {3, 3, 1}; // .----
+const int MORSE_CODE_2[] = {3, 1, 3}; // ..---
+const int MORSE_CODE_3[] = {3, 1, 1}; // ...--
+const int MORSE_CODE_4[] = {1, 3, 3}; // ....-
+const int MORSE_CODE_5[] = {1, 3, 1}; // .....
+const int MORSE_CODE_6[] = {1, 1, 3}; // -....
+const int MORSE_CODE_7[] = {1, 1, 1}; // --...
 
 // ヘッダーとフッター (整数配列形式)
 // モールス符号のITU-R勧告ではSOSは"...---..."です。
