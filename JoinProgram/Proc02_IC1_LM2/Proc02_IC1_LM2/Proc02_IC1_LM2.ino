@@ -50,14 +50,14 @@ const int UNIT_TIME = 100; // 例: 100ms
 const int LASER_PIN = 9;   // レーザーモジュールが接続されているデジタルピン
 
 // モールス符号の定義 (0-7)
-const int MORSE_CODE_0[] = {3, 3, 3, 3, 3}; // -----
-const int MORSE_CODE_1[] = {1, 3, 3, 3, 3}; // .----
-const int MORSE_CODE_2[] = {1, 1, 3, 3, 3}; // ..---
-const int MORSE_CODE_3[] = {1, 1, 1, 3, 3}; // ...--
-const int MORSE_CODE_4[] = {1, 1, 1, 1, 3}; // ....-
-const int MORSE_CODE_5[] = {1, 1, 1, 1, 1}; // .....
-const int MORSE_CODE_6[] = {3, 1, 1, 1, 1}; // -....
-const int MORSE_CODE_7[] = {3, 3, 1, 1, 1}; // --...
+const int MORSE_CODE_0[] = {3, 3, 3}; // -----
+const int MORSE_CODE_1[] = {3, 3, 1}; // .----
+const int MORSE_CODE_2[] = {3, 1, 3}; // ..---
+const int MORSE_CODE_3[] = {3, 1, 1}; // ...--
+const int MORSE_CODE_4[] = {1, 3, 3}; // ....-
+const int MORSE_CODE_5[] = {1, 3, 1}; // .....
+const int MORSE_CODE_6[] = {1, 1, 3}; // -....
+const int MORSE_CODE_7[] = {1, 1, 1}; // --...
 
 // ヘッダーとフッター (整数配列形式)
 const int HEADER[] = {1, 1, -1, 3, 3, 3, -1, 1, 1}; // "..---.."
