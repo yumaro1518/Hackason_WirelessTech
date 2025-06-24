@@ -4,7 +4,7 @@
 int analogPin = A0;
 int sensorValue = 0;
 // 距離と対応する閾値。配列をconst int[]にすることで、ROMに配置され効率的です。
-const int th[10] = {570, 500, 350, 290, 260, 245, 225, 195, 184, 180}; //15cm,20cm,25cm,30cm,35cm,40cm,45cm,50cm,60cm,70cm
+const int th[10] = {550, 525, 480, 415, 350, 290, 225, 201, 175, 170}; //15cm,20cm,25cm,30cm,35cm,40cm,45cm,50cm,60cm,70cm
 const int datamax = 20; // 送信する数字の最大数を増やす場合、ここも調整
 int dataBuffer[datamax]; // センサーから読み取った数値を一時的に格納するバッファ
 int dataCount = 0;       // dataBufferに格納された数値の数
@@ -23,21 +23,21 @@ int thchange(int sensorValue) {
   }
 
   // 距離に応じた数字の変換ロジック
-  if (sensorValue <= th[1] && sensorValue > th[2]) { // 500以下, 350より大
+  if (sensorValue <= th[1] ) { // 500以下, 350より大
     return 0;
-  } else if (sensorValue <= th[2] && sensorValue > th[3]) { // 350以下, 290より大
+  } else if (sensorValue <= th[1] && sensorValue > th[2]) { // 350以下, 290より大
     return 1;
-  } else if (sensorValue <= th[3] && sensorValue > th[4]) { // 290以下, 260より大
+  } else if (sensorValue <= th[2] && sensorValue > th[3]) { // 290以下, 260より大
     return 2;
-  } else if (sensorValue <= th[4] && sensorValue > th[5]) { // 260以下, 245より大
+  } else if (sensorValue <= th[3] && sensorValue > th[4]) { // 260以下, 245より大
     return 3;
-  } else if (sensorValue <= th[5] && sensorValue > th[6]) { // 245以下, 225より大
+  } else if (sensorValue <= th[4] && sensorValue > th[5]) { // 245以下, 225より大
     return 4;
-  } else if (sensorValue <= th[6] && sensorValue > th[7]) { // 225以下, 195より大
+  } else if (sensorValue <= th[5] && sensorValue > th[6]) { // 225以下, 195より大
     return 5;
-  } else if (sensorValue <= th[7] && sensorValue > th[8]) { // 195以下, 184より大
+  } else if (sensorValue <= th[6] && sensorValue > th[7]) { // 195以下, 184より大
     return 6;
-  } else if (sensorValue <= th[8] && sensorValue > th[9]) { // 184以下, 180より大
+  } else if (sensorValue <= th[7] && sensorValue > th[8]) { // 184以下, 180より大
     return 7;
   } else {
     return 999; // 範囲外のエラー
