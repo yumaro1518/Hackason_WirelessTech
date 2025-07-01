@@ -15,27 +15,29 @@ int dataCount = 0;       // dataBufferに格納された数値の数
 // センサー値を0から7の数字、または特殊な開始/終了コードへ変換
 // 以前のthchange関数のロジックをより明確に修正
 int thchange(int sensorValue) {
-  if (sensorValue >= th[0]) { // th[0] (550) 以上は「読み取り開始」シグナル
+  static int flag = 0; // フラグを静的変数として初期化
+  if (sensorValue >= th[0] && flag == 0) { // th[0] (550) 以上は「読み取り開始」シグナル
+    flag = 1; // フラグを更新
     return -1; // 開始
   } else if (sensorValue <= th[9]) { // th[9] (170) 以下は「読み取り終了」シグナル
     return -2; // 終了
   }
   // それ以外の範囲で0～7の数字にマッピング
-  else if (sensorValue <= th[1] && sensorValue > th[2]) { // 525以下, 480より大
+  else if (sensorValue > th[1]) { // 525以下, 480より大
     return 0;
-  } else if (sensorValue <= th[2] && sensorValue > th[3]) { // 480以下, 415より大
+  } else if (sensorValue <= th[1] && sensorValue > th[2) { // 480以下, 415より大
     return 1;
-  } else if (sensorValue <= th[3] && sensorValue > th[4]) { // 415以下, 350より大
+  } else if (sensorValue <= th[2] && sensorValue > th[3]) { // 415以下, 350より大
     return 2;
-  } else if (sensorValue <= th[4] && sensorValue > th[5]) { // 350以下, 290より大
+  } else if (sensorValue <= th[3] && sensorValue > th[4]) { // 350以下, 290より大
     return 3;
-  } else if (sensorValue <= th[5] && sensorValue > th[6]) { // 290以下, 225より大
+  } else if (sensorValue <= th[4] && sensorValue > th[5]) { // 290以下, 225より大
     return 4;
-  } else if (sensorValue <= th[6] && sensorValue > th[7]) { // 225以下, 201より大
+  } else if (sensorValue <= th[5] && sensorValue > th[6]) { // 225以下, 201より大
     return 5;
-  } else if (sensorValue <= th[7] && sensorValue > th[8]) { // 201以下, 175より大
+  } else if (sensorValue <= th[6] && sensorValue > th[7]) { // 201以下, 175より大
     return 6;
-  } else if (sensorValue <= th[8] && sensorValue > th[9]) { // 175以下, 170より大
+  } else if (sensorValue <= th[7] && sensorValue > th[8]) { // 175以下, 170より大
     return 7;
   } else {
     // どの定義済み範囲にも当てはまらない場合

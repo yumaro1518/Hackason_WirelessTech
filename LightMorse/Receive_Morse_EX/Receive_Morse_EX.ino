@@ -20,14 +20,14 @@ char morseBuffer[150]; // 最大80符号分のドット/ダッシュを格納 (�
 int bufferIndex = 0;
 
 // モールス符号の定義 (ドット/ダッシュ文字列)
-const char* MORSE_CODE_0_STR = "-----";
-const char* MORSE_CODE_1_STR = ".----";
-const char* MORSE_CODE_2_STR = "..---";
-const char* MORSE_CODE_3_STR = "...--";
-const char* MORSE_CODE_4_STR = "....-";
-const char* MORSE_CODE_5_STR = ".....";
-const char* MORSE_CODE_6_STR = "-....";
-const char* MORSE_CODE_7_STR = "--...";
+const char* MORSE_CODE_0_STR = "---";
+const char* MORSE_CODE_1_STR = "--.";
+const char* MORSE_CODE_2_STR = "-.-";
+const char* MORSE_CODE_3_STR = "-..";
+const char* MORSE_CODE_4_STR = ".--";
+const char* MORSE_CODE_5_STR = ".-.";
+const char* MORSE_CODE_6_STR = "..-";
+const char* MORSE_CODE_7_STR = "...";
 
 // ヘッダーとフッター (文字列)
 // 送信側と文字列が一致している必要があります。
